@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
+use App\Models\Technology;
 use App\Models\Type;
 use Illuminate\Support\Facades\Storage;
 
@@ -30,7 +31,8 @@ class ProjectController extends Controller
     public function create()
     {
         $types = Type::all();
-        return view('admin.projects.create', compact('types'));
+        $technologies = Technology::all();
+        return view('admin.projects.create', compact('types', 'technologies'));
     }
 
     /**
@@ -47,7 +49,13 @@ class ProjectController extends Controller
             $path = Storage::put('project_images', $request->cover_image);
             $form_data['cover_image'] = $path;
         }
+
         $project = Project::create($form_data);
+
+        if ($request->has('technologies')) {
+            $project->technologies()->attach($form_data['technologies']);
+        }
+
         return redirect()->route('admin.projects.index')->with('message', "Il progetto $project->title è sato creato con successo");
     }
 
@@ -71,7 +79,8 @@ class ProjectController extends Controller
     public function edit(Project $project)
     {
         $types = Type::all();
-        return view('admin.projects.edit', compact('project', 'types'));
+        $technologies = Technology::all();
+        return view('admin.projects.edit', compact('project', 'types', 'technologies'));
     }
 
     /**
@@ -93,6 +102,12 @@ class ProjectController extends Controller
             $form_data['cover_image'] = $path;
         }
         $project->update($form_data);
+
+        if ($request->has('technologies')) {
+            $project->technologies()->sync($form_data['technologies']);
+        } else {
+            $project->technologies()->sync([]);
+        }
         return redirect()->route('admin.projects.index')->with('message', "Il progetto $project->title è stato modificato con successo");
     }
 
